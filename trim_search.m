@@ -1,8 +1,7 @@
 function [trimVals, fval] = trim_search(initCond, constr, trimConds)
     % Wind axis to body axis transformation matrix
-    Lbw = @(alpha, beta) [cos(beta)*cos(alpha), sin(beta), -cos(beta)*sin(alpha);...
-        -sin(beta)*cos(alpha), cos(beta), sin(alpha)*sin(beta);...
-        sin(alpha), 0, cos(alpha)];
+    Lbw = @(alpha, beta) [cos(alpha), 0, -sin(alpha); 0 1 0; sin(alpha) 0 cos(alpha)]*...
+        [cos(-beta), sin(-beta), 0; -sin(-beta), cos(-beta), 0; 0 0 1];
 
     % NED axis to body axis transformation matrix
     Lbe = @(theta,phi) [cos(theta), 0, -sin(theta);...
@@ -81,7 +80,9 @@ function [trimVals, fval] = trim_search(initCond, constr, trimConds)
         -1, 1, 1, 0, 0, 0, 0, 0;...
         -1, -1, 1, 0, 0, 0, 0, 0;...
         1, -1, 1, 0, 0, 0, 0, 0]; % di = x*dr + y*de + z*da relation
-
+    
+    A = [A; -A];
+    
     b = 30*pi/180*ones(size(A,1),1); % finLim constraints
 
     % There are no equality constraints and nonlinear constraints
