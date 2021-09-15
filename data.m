@@ -1,26 +1,27 @@
 clear
 
+% Atmospheric Properties
 rho0 = 1.223;
 T0 = 293;
 k = 1.4;
 R = 287;
 
-d = 0.4572;
-g = 9.81;
+d = 0.4572; % Diameter [m]
+g = 9.81; % Gravitational Acceleration [m/s^2]
 
-mass = 944.8488;
+mass = 944.8488; % [kg]
 Ixx = 32.5309;
 Iyy = 588.2676;
 Izz = Iyy;
-Ixy = 10;
-Iyz = 10;
-Ixz = 10;
+Ixy = 0;
+Iyz = 0;
+Ixz = 0;
 
 I = [Ixx, -Ixy, -Ixz;...
     -Ixy, Iyy, -Iyz;...
     -Ixz, -Iyz, Izz];
 
-A = pi*(d/2)^2;
+A = pi*(d/2)^2; % Cross Sectional Area [m^2]
 
 Machpoints = 0.7:0.1:2.0;
 Cd_data = -[0.193000, 0.196000, 0.206000, 0.257000, 0.279000, 0.269000,...
@@ -58,15 +59,6 @@ Cmd_data = -[17.47528, 18.392016, 19.939008, 22.173552, 28.476112, 25.668608,...
 Cld_data = [3.72424, 4.068016, 4.755568, 6.01608, 8.30792, 6.932816,...
     5.385824, 3.43776, 2.635616, 2.177248, 1.776176, 1.489696, 1.260512,...
     1.031328];
-
-
-Cyb_data = Cza_data;
-Cydr_data = Czd_data;
-Cyr_data = -Czq_data;
-Cnb_data = -Cma_data;
-Cndr_data = -Cmd_data;
-Cnr_data = Cmq_data;
-Cx_data = Cd_data;
 
 delAlpha = 0.1/180*pi;
 delBeta = 0.1/180*pi;

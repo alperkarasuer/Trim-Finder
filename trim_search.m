@@ -36,14 +36,13 @@ function [trimVals, fval] = trim_search(initCond, constr, trimConds)
 
     % Functions to create vectors for forces and moments
     forces = @(def_dr, def_de, def_da, p, q, r, theta, phi) ...
-        Qd*initCond.d*transpose([Cx, Cy(def_dr, r), Cz(def_de, q)]) + initCond.mass*Lbe(theta,phi)*transpose([initCond.g 0 0]);
+        Qd*initCond.A*transpose([Cx, Cy(def_dr, r), Cz(def_de, q)]) + initCond.mass*Lbe(theta,phi)*transpose([initCond.g 0 0]);
     moments = @(def_dr, def_de, def_da, p, q, r) Qd*initCond.A*initCond.d*transpose([Cl(def_da,p) Cm(def_de, q) Cn(def_dr, r)]);
     
     % Functions to create vectors of body velocities, angular rates and roll angle
-    omega = @(p, q, r) [0 -r q; r 0 -p; -q p 0];
-    
-    velDots = @(def_dr, def_de, def_da, p, q, r, theta, phi) -omega(p,q,r)*[u; v; w] + ...
-        (1/initCond.mass)*forces(def_dr, def_de, def_da, p, q, r, theta, phi);
+
+    velDots = @(def_dr, def_de, def_da, p, q, r, theta, phi) ((1/initCond.mass)*...
+        forces(def_dr, def_de, def_da, p, q, r, theta, phi)) - cross([p; q; r], [u; v; w]);
 
     angRateDots = @(def_dr, def_de, def_da, p, q, r) initCond.I\moments(def_dr, def_de, def_da, p, q, r) - ...
         initCond.I\(cross([p; q; r], initCond.I*[p; q; r]));    

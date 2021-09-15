@@ -1,6 +1,6 @@
 clear
 close
-clc 
+ 
 
 %% Preliminaries and Inputs
 
