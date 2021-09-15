@@ -13,9 +13,9 @@ mass = 944.8488; % [kg]
 Ixx = 32.5309;
 Iyy = 588.2676;
 Izz = Iyy;
-Ixy = 0;
-Iyz = 0;
-Ixz = 0;
+Ixy = 10;
+Iyz = 10;
+Ixz = 10;
 
 I = [Ixx, -Ixy, -Ixz;...
     -Ixy, Iyy, -Iyz;...
