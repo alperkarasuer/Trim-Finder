@@ -1,6 +1,6 @@
 clear
 close
- 
+clc
 
 %% Preliminaries and Inputs
 
@@ -48,9 +48,28 @@ physConstr.thetaLim = deg2rad(90);
 [trimConds.rho, trimConds.T, trimConds.speedOfSound] = altitudeProp(trimConds.altitude, inits);
 
 %% Solve the problem
-% Find the trim condition --> trimValues = [def_dr, def_de, def_da, p, q, r, theta, phi]
-[trimValues, fval] = trim_search(inits, physConstr, trimConds);
+% Find the trim condition --> trimValues = [def_de, def_dr, def_da, p, q, r, phi, theta]
+[trimValues, fval, derivatives] = trim_search(inits, physConstr, trimConds);
 
+% Save the variables into a .mat file
+save('trimCondition.mat', 'trimValues', 'fval', 'derivatives')
+
+% Table for trim conditions
+varNames1 = {'de','dr','da','p','q','r','phi','theta', 'cost'};
+T1 = table(trimValues(1), trimValues(2), trimValues(3),...
+    trimValues(4), trimValues(5), trimValues(6), trimValues(7), ...
+    trimValues(8), fval, 'VariableNames', varNames1);
+
+% Table for control and stability derivatives
+varNames2 = {'Cza', 'Czde', 'Cma', 'Cmde', 'CYb', 'CYdr', 'Clb', 'Clda', ...
+    'Cnb', 'Cndr'};
+T2 = table(derivatives(1), derivatives(2), derivatives(3), derivatives(4), ...
+    derivatives(5), derivatives(6), derivatives(7), derivatives(8), ...
+    derivatives(9), derivatives(10), 'VariableName', varNames2);
+
+% Display tables
+disp(T1)
+disp(T2)
 %% Function to find atmospheric properties 
 function [rho, T, speedOfSound] = altitudeProp(h, consts)
     if((h) <= 10000)

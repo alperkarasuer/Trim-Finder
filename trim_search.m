@@ -1,4 +1,4 @@
-function [trimVals, fval] = trim_search(initCond, constr, trimConds)
+function [trimVals, fval, deriv] = trim_search(initConds, constr, trimConds)
     % Wind axis to body axis transformation matrix
     Lbw = @(alpha, beta) [cos(alpha), 0, -sin(alpha); 0 1 0; sin(alpha) 0 cos(alpha)]*...
         [cos(-beta), sin(-beta), 0; -sin(-beta), cos(-beta), 0; 0 0 1];
@@ -13,41 +13,41 @@ function [trimVals, fval] = trim_search(initCond, constr, trimConds)
     [u, v, w] = deal(bodyVel(1), bodyVel(2), bodyVel(3));
     
     % Interpolation of aerodynamic data
-    Cd = interp1(initCond.Machpoints, initCond.Cd_data, trimConds.mach);
-    Cza = interp1(initCond.Machpoints, initCond.Cza_data, trimConds.mach);
-    Czq = interp1(initCond.Machpoints, initCond.Czq_data, trimConds.mach);
-    Cma = interp1(initCond.Machpoints, initCond.Cma_data, trimConds.mach);
-    Cmq = interp1(initCond.Machpoints, initCond.Cmq_data, trimConds.mach);
-    Clp = interp1(initCond.Machpoints, initCond.Clp_data, trimConds.mach);
-    Czd = interp1(initCond.Machpoints, initCond.Czd_data, trimConds.mach);
-    Cmd = interp1(initCond.Machpoints, initCond.Cmd_data, trimConds.mach);
-    Cld = interp1(initCond.Machpoints, initCond.Cld_data, trimConds.mach); % aynı
+    Cd = interp1(initConds.Machpoints, initConds.Cd_data, trimConds.mach);
+    Cza = interp1(initConds.Machpoints, initConds.Cza_data, trimConds.mach);
+    Czq = interp1(initConds.Machpoints, initConds.Czq_data, trimConds.mach);
+    Cma = interp1(initConds.Machpoints, initConds.Cma_data, trimConds.mach);
+    Cmq = interp1(initConds.Machpoints, initConds.Cmq_data, trimConds.mach);
+    Clp = interp1(initConds.Machpoints, initConds.Clp_data, trimConds.mach);
+    Czd = interp1(initConds.Machpoints, initConds.Czd_data, trimConds.mach);
+    Cmd = interp1(initConds.Machpoints, initConds.Cmd_data, trimConds.mach);
+    Cld = interp1(initConds.Machpoints, initConds.Cld_data, trimConds.mach); % aynı
     
     
     % Functions to calculate aerodynamic coefficients
     Cx = Cd;
-    Cy = @(def_dr, r) Cza*trimConds.beta + Czd*def_dr - Czq*r*initCond.d/(2*norm(bodyVel));
-    Cz = @(def_de, q) Cza*trimConds.alpha + Czd*def_de + Czq*q*initCond.d/(2*norm(bodyVel));
-    Cl = @(def_da, p) Cld*def_da + Clp*p*initCond.d/(2*norm(bodyVel));
-    Cm = @(def_de, q) Cma*trimConds.alpha + Cmd*def_de + Cmq*q*initCond.d/(2*norm(bodyVel));
-    Cn = @(def_dr, r) -Cma*trimConds.beta - Cmd*def_dr + Cmq*r*initCond.d/(2*norm(bodyVel));
+    Cy = @(def_dr, r, beta) Cza*beta + Czd*def_dr - Czq*r*initConds.d/(2*norm(bodyVel));
+    Cz = @(def_de, q, alpha) Cza*alpha + Czd*def_de + Czq*q*initConds.d/(2*norm(bodyVel));
+    Cl = @(def_da, p) Cld*def_da + Clp*p*initConds.d/(2*norm(bodyVel));
+    Cm = @(def_de, q, alpha) Cma*alpha + Cmd*def_de + Cmq*q*initConds.d/(2*norm(bodyVel));
+    Cn = @(def_dr, r, beta) -Cma*beta - Cmd*def_dr + Cmq*r*initConds.d/(2*norm(bodyVel));
     
     % Dynamic pressure
     Qd = 0.5*trimConds.rho*norm(bodyVel)^2;
 
     % Functions to create vectors for forces and moments
-    forces = @(def_de, def_dr, def_da, p, q, r, phi, theta) ...
-        Qd*initCond.A*transpose([Cx, Cy(def_dr, r), Cz(def_de, q)]) + initCond.mass*Lbe(phi, theta)*transpose([0 0 initCond.g]);
+    forces = @(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta) ...
+        Qd*initConds.A*transpose([Cx, Cy(def_dr, r, beta), Cz(def_de, q, alpha)]) + initConds.mass*Lbe(phi, theta)*transpose([0 0 initConds.g]);
     
-    moments = @(def_de, def_dr, def_da, p, q, r) Qd*initCond.A*initCond.d*transpose([Cl(def_da,p) Cm(def_de, q) Cn(def_dr, r)]);
+    moments = @(def_de, def_dr, def_da, p, q, r, alpha, beta) Qd*initConds.A*initConds.d*transpose([Cl(def_da,p) Cm(def_de, q, alpha) Cn(def_dr, r, beta)]);
     
     % Functions to create vectors of body velocities, angular rates and roll angle
 
-    velDots = @(def_de, def_dr, def_da, p, q, r, phi, theta) ((1/initCond.mass)*...
-        forces(def_de, def_dr, def_da, p, q, r, phi, theta)) - cross([p; q; r], [u; v; w]);
+    velDots = @(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta) ((1/initConds.mass)*...
+        forces(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta)) - cross([p; q; r], [u; v; w]);
 
-    angRateDots = @(def_de, def_dr, def_da, p, q, r) initCond.I\moments(def_de, def_dr, def_da, p, q, r) - ...
-        initCond.I\(cross([p; q; r], initCond.I*[p; q; r]));    
+    angRateDots = @(def_de, def_dr, def_da, p, q, r, alpha, beta) initConds.I\moments(def_de, def_dr, def_da, p, q, r, alpha, beta) - ...
+        initConds.I\(cross([p; q; r], initConds.I*[p; q; r]));    
     
     phiDot = @(p, q, r, phi, theta) p + (q*sin(phi) + r*cos(phi))*tan(theta);    
     
@@ -56,19 +56,19 @@ function [trimVals, fval] = trim_search(initCond, constr, trimConds)
     idx = @(expr, index) expr(index);
 
     % Distribute vectors to individual elements
-    vDot = @(def_de, def_dr, def_da, p, q, r, phi, theta) idx(velDots(def_de, def_dr, def_da, p, q, r, phi, theta), 2);
-    wDot = @(def_de, def_dr, def_da, p, q, r, phi, theta) idx(velDots(def_de, def_dr, def_da, p, q, r, phi, theta), 3);
-    pDot = @(def_de, def_dr, def_da, p, q, r) idx(angRateDots(def_de, def_dr, def_da, p, q, r), 1);
-    qDot = @(def_de, def_dr, def_da, p, q, r) idx(angRateDots(def_de, def_dr, def_da, p, q, r), 2);
-    rDot = @(def_de, def_dr, def_da, p, q, r) idx(angRateDots(def_de, def_dr, def_da, p, q, r), 3);
+    vDot = @(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta) idx(velDots(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta), 2);
+    wDot = @(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta) idx(velDots(def_de, def_dr, def_da, p, q, r, phi, theta, alpha, beta), 3);
+    pDot = @(def_de, def_dr, def_da, p, q, r, alpha, beta) idx(angRateDots(def_de, def_dr, def_da, p, q, r, alpha, beta), 1);
+    qDot = @(def_de, def_dr, def_da, p, q, r, alpha, beta) idx(angRateDots(def_de, def_dr, def_da, p, q, r, alpha, beta), 2);
+    rDot = @(def_de, def_dr, def_da, p, q, r, alpha, beta) idx(angRateDots(def_de, def_dr, def_da, p, q, r, alpha, beta), 3);
 
     % Cost function
     % x = [def_de, def_dr, def_da, p, q, r, phi, theta]
-    J = @(x) (vDot(x(1), x(2), x(3), x(4), x(5), x(6), x(7), x(8)))^2 ...
-    + (wDot(x(1), x(2), x(3), x(4), x(5), x(6), x(7), x(8)))^2 ... 
-    + (pDot(x(1), x(2), x(3), x(4), x(5), x(6)))^2 ...
-    + (qDot(x(1), x(2), x(3), x(4), x(5), x(6)))^2 ... 
-    + (rDot(x(1), x(2), x(3), x(4), x(5), x(6)))^2 ...
+    J = @(x) (vDot(x(1), x(2), x(3), x(4), x(5), x(6), x(7), x(8), trimConds.alpha, trimConds.beta))^2 ...
+    + (wDot(x(1), x(2), x(3), x(4), x(5), x(6), x(7), x(8), trimConds.alpha, trimConds.beta))^2 ... 
+    + (pDot(x(1), x(2), x(3), x(4), x(5), x(6), trimConds.alpha, trimConds.beta))^2 ...
+    + (qDot(x(1), x(2), x(3), x(4), x(5), x(6), trimConds.alpha, trimConds.beta))^2 ... 
+    + (rDot(x(1), x(2), x(3), x(4), x(5), x(6), trimConds.alpha, trimConds.beta))^2 ...
     + (phiDot(x(4), x(5), x(6), x(7), x(8)))^2;
 
     % Upper and lower bounds of deflections
@@ -93,7 +93,43 @@ function [trimVals, fval] = trim_search(initCond, constr, trimConds)
     beq = [];
 
     % Find minimum of the cost function J given the constraints
-    [trimVals, fval] = fmincon(J, x0, A, b, Aeq, beq, lb, ub);
+    % trimVals = [def_de, def_dr, def_da, p, q, r, phi, theta]
+    options = optimoptions('fmincon','Display','notify');
+    [trimVals, fval] = fmincon(J, x0, A, b, Aeq, beq, lb, ub, [], options);
+    
+    [def_de, def_dr, def_da, p, q, r] = deal(trimVals(1), trimVals(2), ...
+        trimVals(3), trimVals(4), trimVals(5), trimVals(6));
+    
+    % Rows are for Cza, Czde, Cma, Cmde, Cyb, Cydr, Clb, Clda, Cnb, Cndr
+    % First column is positive, second column is negative perturbation
+    deltaCoef = zeros(10,2);
+    
+    for i = 1:2
+        deltaCoef(1,i) = Cz(def_de, q, trimConds.alpha + ((-1)^(i+1))*initConds.delAlpha);
+        deltaCoef(2,i) = Cz(def_de + ((-1)^(i+1))*initConds.delDef, q, trimConds.alpha);
+        deltaCoef(3,i) = Cm(def_de, q, trimConds.alpha + ((-1)^(i+1))*initConds.delAlpha);
+        deltaCoef(4,i) = Cm(def_de + ((-1)^(i+1))*initConds.delDef, q, trimConds.alpha);
+        deltaCoef(5,i) = Cy(def_dr, r, trimConds.beta + ((-1)^(i+1))*initConds.delBeta);
+        deltaCoef(6,i) = Cy(def_dr + ((-1)^(i+1))*initConds.delDef, q, trimConds.beta);
+        deltaCoef(7,i) = Cl(def_da, p);
+        deltaCoef(8,i) = Cl(def_da + ((-1)^(i+1))*initConds.delDef, p);
+        deltaCoef(9,i) = Cn(def_dr, r, trimConds.beta + ((-1)^(i+1))*initConds.delBeta);
+        deltaCoef(10,i) = Cn(def_dr + ((-1)^(i+1))*initConds.delDef, r, trimConds.beta);
+    end
+    
+    % Derivatives
+    Cza = (deltaCoef(1,1)-deltaCoef(1,2))/(2*initConds.delAlpha);
+    Czde = (deltaCoef(2,1)-deltaCoef(2,2))/(2*initConds.delDef);
+    Cma = (deltaCoef(3,1)-deltaCoef(3,2))/(2*initConds.delAlpha);
+    Cmde = (deltaCoef(4,1)-deltaCoef(4,2))/(2*initConds.delDef);
+    Cyb = (deltaCoef(5,1)-deltaCoef(5,2))/(2*initConds.delBeta);
+    Cydr = (deltaCoef(6,1)-deltaCoef(6,2))/(2*initConds.delDef);
+    Clb = (deltaCoef(7,1)-deltaCoef(7,2))/(2*initConds.delBeta);
+    Clda = (deltaCoef(8,1)-deltaCoef(8,2))/(2*initConds.delAlpha);
+    Cnb = (deltaCoef(9,1)-deltaCoef(9,2))/(2*initConds.delBeta);
+    Cndr = (deltaCoef(10,1)-deltaCoef(10,2))/(2*initConds.delDef);
+    
+    deriv = [Cza Czde Cma Cmde Cyb Cydr Clb Clda Cnb Cndr];
     
 end
     
