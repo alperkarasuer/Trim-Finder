@@ -1,4 +1,4 @@
-function [trimVals, fval, deriv] = trim_search(initConds, constr, trimConds)
+ function [trimVals, fval, deriv] = trim_search(initConds, constr, trimConds)
     % Wind axis to body axis transformation matrix
     Lbw = @(alpha, beta) [cos(alpha), 0, -sin(alpha); 0 1 0; sin(alpha) 0 cos(alpha)]*...
         [cos(-beta), sin(-beta), 0; -sin(-beta), cos(-beta), 0; 0 0 1];
@@ -21,7 +21,7 @@ function [trimVals, fval, deriv] = trim_search(initConds, constr, trimConds)
     Clp = interp1(initConds.Machpoints, initConds.Clp_data, trimConds.mach);
     Czd = interp1(initConds.Machpoints, initConds.Czd_data, trimConds.mach);
     Cmd = interp1(initConds.Machpoints, initConds.Cmd_data, trimConds.mach);
-    Cld = interp1(initConds.Machpoints, initConds.Cld_data, trimConds.mach); % aynı
+    Cld = interp1(initConds.Machpoints, initConds.Cld_data, trimConds.mach);
     
     
     % Functions to calculate aerodynamic coefficients
